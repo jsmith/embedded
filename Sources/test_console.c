@@ -2,25 +2,25 @@
  * Jacob Smith
  * Mar. 7th, 2019
  */
-#include "console.h";
+#include "console.h"
 
 int main() {
 	// Setup pins and registers
-	UARTx_Interface_Init();
+	uart_init();
 
 	// Test direct putchar() Functionality
-    UARTx_Putchar('t');
-	UARTx_Putchar('e');
-	UARTx_Putchar('s');
-	UARTx_Putchar('t');
-	UARTx_Putchar(' ');
+    uart_put('t');
+	uart_put('e');
+	uart_put('s');
+	uart_put('t');
+	uart_put(' ');
 	
-	UARTx_Putstring("TEST UPPERCASE");
+	uart_print("TEST UPPERCASE");
 
 	// Test user input getchar() functionality
 	while(1){
 		// Will output any user input.
-		UARTx_Putchar(UARTx_Getchar());
+		uart_put(uart_get());
 	}
 
     return 0;

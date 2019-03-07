@@ -1,5 +1,5 @@
-#include "fsl_device_registers.h"
-#include "console.h";
+#include "MK64F12.h"
+#include "console.h"
 
 /**
  * Set the baud rate to 9600
@@ -7,7 +7,7 @@
  * Stop bits -> 1
  * Disabled Parity & Flor control
  */
-void UARTx_Interface_Init() {
+void uart_init() {
 	// Enable the clock module
 	SIM_SCGC4 |= SIM_SCGC4_UART0_MASK;
 
@@ -34,24 +34,23 @@ void UARTx_Interface_Init() {
 	UART0_C2 |= UART_C2_RE_MASK;
 }
 
-void UARTx_Putchar(char c) {
+void uart_put(char c) {
 	//  Poll the TDRE (transmit data register empty)
-	while(!((UART0_S1 >> 7) & 1)) {}
+	while(!(UART0_S1 & UART_S1_TDRE_MASK)) {}
 	// Write to output
 	UART0_D = c;
 }
 
-char UARTx_Getchar() {
+char uart_get() {
 	//  Poll the RDRF (transmit data register empty)
-	while(!((UART0_S1 >> 5) & 1)) {}
+	while(!(UART0_S1 & UART_S1_RDRF_MASK)) {}
 	// Read from output
 	return UART0_D;
 }
 
-void UARTx_Putstring(char* string) {
+void uart_print(char* string) {
 	while(*string) {
-		UARTx_Putchar(*string);
-
+		uart_put(*string);
 		string++;
 	}
 }

@@ -1,9 +1,9 @@
 #ifndef HEADER_CONSOLE
 #define HEADER_CONSOLE
 
-void UARTx_Interface_Init();
-void UARTx_Putchar(char c);
-char UARTx_Getchar();
-void UARTx_Putstring(char* string);
+void uart_init();
+void uart_put(char c);
+char uart_get();
+void uart_print(char* string);
 
 #endif
