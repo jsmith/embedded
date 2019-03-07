@@ -1,5 +1,5 @@
-#ifndef HEADER_CONSOLE
-#define HEADER_CONSOLE
+#ifndef HEADER_GPIO
+#define HEADER_GPIO
 
 void gpio_init();
 void gpio_go();

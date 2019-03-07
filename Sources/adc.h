@@ -1,7 +1,7 @@
-#ifndef HEADER_CONSOLE
-#define HEADER_CONSOLE
+#ifndef HEADER_ADC
+#define HEADER_ADC
 
 void adc_init();
-void adc_read();
+double adc_read();
 
 #endif
