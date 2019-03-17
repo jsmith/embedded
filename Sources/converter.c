@@ -5,7 +5,7 @@
  * Reverses a string 'str' of length 'len'
  */
 void reverse(char *str, int len) {
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len/2; i++) {
         int j = len - 1 - i;
         int temp = str[i];
         str[i] = str[j];
