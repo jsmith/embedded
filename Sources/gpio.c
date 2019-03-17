@@ -12,12 +12,6 @@ void gpio_init(){
 	GPIOB_PDDR |= 1 << 22;
 }
 
-void gpio_go() {
-	while (1) {
-		int input = (GPIOC_PDIR >> 6) & 1;
-		GPIOB_PSOR = input << 21;
-		GPIOB_PCOR = (input ^ 1) << 21;
-		GPIOB_PSOR = input << 22;
-		GPIOB_PCOR = (input ^ 1) << 22;
-	}
+int gpio_check_switch() {
+	return (GPIOC_PDIR >> 6) & 1;
 }

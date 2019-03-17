@@ -2,6 +2,8 @@
 #include "adc.h"
 #include "ftm.h"
 #include "pwm.h"
+#include "gpio.h"
+#include "dac.h"
 #include "converter.h"
 
 #define MAX 50
@@ -43,12 +45,17 @@ int main() {
 	uart_init();
 	adc_init();
 	pwm_init();
+	ftm_init();
+	gpio_init();
+	dac_init();
 
-	pwm_write();
+//	pwm_set_output();
 
 	while (1) {
 		value = adc_read();
 		dtoa(value, formatted, 2);
+
+		dac_out(value * 1241);
 
 //		check_hand_state();
 

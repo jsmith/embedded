@@ -2,6 +2,6 @@
 #define HEADER_GPIO
 
 void gpio_init();
-void gpio_go();
+int gpio_check_switch();
 
 #endif
