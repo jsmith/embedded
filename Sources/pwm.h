@@ -4,6 +4,5 @@
 void pwm_init();
 void pwm_set_output();
 void pwm_clear_output();
-void pwm_write();
 
 #endif
