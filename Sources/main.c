@@ -4,6 +4,7 @@
 #include "pwm.h"
 #include "gpio.h"
 #include "dac.h"
+#include "mario.h"
 #include "converter.h"
 
 #define MAX 50
@@ -37,7 +38,7 @@ double duty_min = 0.0005;
 double duty_max = 0.0025;
 
 // Variable duty
-double period = 0.004;
+//double period = 0.004;
 
 // Reading formatted for display.
 char formatted[MAX];
@@ -66,14 +67,39 @@ int main() {
 	gpio_init();
 	dac_init();
 
+	int note = 0;
+	double period = 0.001;
 	while(1) {
+		// to calculate the note duration, take one second
+		// divided by the note type.
+		//e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+		double noteDuration = 1.0 / MARIO_TEMPO[note];
 		adc_to_dac();
+		if (MARIO_MELODY[note]) {
+			period = 1.0 / MARIO_MELODY[note];
+		} else {
+			dac_value = 0;
+		}
 
-		dac_out(dac_min);
-		ftm_delay(period);
+		double time_passed = 0;
+		while (time_passed < noteDuration) {
 
-		dac_out(dac_value);
-		ftm_delay(period);
+
+			dac_out(dac_min);
+			ftm_delay(period);
+
+			dac_out(dac_value);
+			ftm_delay(period);
+
+			time_passed += period + period;
+		}
+
+		// to distinguish the notes, set a minimum time between them.
+		// the note's duration + 30% seems to work well:
+		double extraDelay = noteDuration * 0.3;
+		ftm_delay(extraDelay);
+
+		note = (note + 1) % MARIO_SIZE;
 	}
 
 	return 0;

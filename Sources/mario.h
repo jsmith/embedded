@@ -145,3 +145,7 @@ int MARIO_TEMPO[] = {
   12, 12, 12, 12,
   12, 12, 12, 12,
 };
+
+int MARIO_SIZE = sizeof(MARIO_MELODY) / sizeof(int);
+
+#endif
