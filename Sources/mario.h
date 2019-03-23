@@ -119,7 +119,7 @@ int MARIO_MELODY[] = {
   NOTE_D7, NOTE_B6, 0, 0
 };
 
-int MARIO_TEMPO[] = {
+int MARIO_BEATS[] = {
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,

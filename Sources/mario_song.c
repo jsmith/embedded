@@ -43,7 +43,7 @@ double duty_max = 0.0025;
 // Reading formatted for display.
 char formatted[MAX];
 
-adc_to_dac() {
+void adc_to_dac_v2() {
 	adc_value = adc_read();
 
 	if (adc_value > adc_max) {
@@ -58,7 +58,7 @@ adc_to_dac() {
 	dac_value = dac_max * conversion * dac_factor;
 }
 
-int mario() {
+int tester() {
 	// Setup pins and registers
 	uart_init();
 	adc_init();
@@ -73,8 +73,8 @@ int mario() {
 		// to calculate the note duration, take one second
 		// divided by the note type.
 		//e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-		double noteDuration = 1.0 / MARIO_TEMPO[note];
-		adc_to_dac();
+		double noteDuration = 1.0 / MARIO_BEATS[note];
+		adc_to_dac_v2();
 		if (MARIO_MELODY[note]) {
 			period = 1.0 / MARIO_MELODY[note];
 		} else {
