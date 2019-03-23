@@ -18,48 +18,43 @@ double threshold_2_high = 2.2; // 2.6
 int p_hand_close = 0;
 int p_hand_open = 0;
 
+// ADC max & min
+double adc_max = 3.3;
+double adc_min = 0.0;
+
 // ADC input value.
-double value = 0.0;
+double adc_value = 0.2;
+
+// DAC max & min.
+double dac_max = 0.05;
+short dac_min = 0;
+
+short dac_value = 0;
+double dac_factor = (4095.0 / 3.3);
 
 // 0.0025 max rotation (Open), 0.0005 min rotation (Close)
 double duty_min = 0.0005;
 double duty_max = 0.0025;
 
 // Variable duty
-double duty = 0.0005;
+double period = 0.004;
 
 // Reading formatted for display.
 char formatted[MAX];
 
-// NOTE:  UART disabled as causes weird jitter glitch with servo.
-void check_hand_state() {
-	if (value <= threshold_1_low && (p_hand_close != 0 || p_hand_open != 1)) {
-		p_hand_close = 0;
-		p_hand_open = 1;
+adc_to_dac() {
+	adc_value = adc_read();
 
-		// Display that hand opening enabled
-//		uart_print("Prosthetic Hand Beginning to Open: ");
-//		uart_print(formatted);
-//		uart_print("\n\r");
+	if (adc_value > adc_max) {
+		adc_value = adc_max;
 	}
-	else if(value > threshold_1_high && value <= threshold_2_low && (p_hand_close != 0 || p_hand_open != 0)) {
-		p_hand_close = 0;
-		p_hand_open = 0;
+	else if (adc_value < adc_min) {
+		adc_value = adc_min;
+	}
 
-		// Display that hand movement suspended
-//		uart_print("Prosthetic Hand Movement Suspended: ");
-//		uart_print(formatted);
-//		uart_print("\n\r");
-	}
-	else if(value > threshold_2_high && (p_hand_close != 1 || p_hand_open != 0)) {
-		p_hand_close = 1;
-		p_hand_open = 0;
+	double conversion = adc_value / adc_max;
 
-		// Display that hand closing enabled
-//		uart_print("Prosthetic Hand Beginning to Close: ");
-//		uart_print(formatted);
-//		uart_print("\n\r");
-	}
+	dac_value = dac_max * conversion * dac_factor;
 }
 
 int main() {
@@ -71,38 +66,15 @@ int main() {
 	gpio_init();
 	dac_init();
 
-	// Loop to check and sync all I/O
 	while(1) {
-		value = adc_read();
-		dtoa(value, formatted, 2);
-		dac_out(value * 1241);
+		adc_to_dac();
 
-		// Will output any user input.
-//		uart_print(formatted);
-//		uart_print("\n\r");
+		dac_out(dac_min);
+		ftm_delay(period);
 
-		check_hand_state();
-
-		if(p_hand_close == 1 &&  p_hand_open == 0) {
-			duty -= 0.00001;
-			if (duty < duty_min) {
-				duty = duty_min;
-			}
-		}
-		else if(p_hand_close == 0 &&  p_hand_open == 1){
-			duty += 0.00001;
-			if (duty > duty_max) {
-				duty = duty_max;
-			}
-		}
-
-		pwm_clear_output();
-		ftm_delay(0.02 - duty);
-
-		pwm_set_output();
-		ftm_delay(duty);
+		dac_out(dac_value);
+		ftm_delay(period);
 	}
-
 
 	return 0;
 }

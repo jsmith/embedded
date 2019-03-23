@@ -2,6 +2,8 @@
 #include "ftm.h"
 #include "gpio.h"
 
+// USE DAC0
+
 void dac_init() {
 	SIM_SCGC2 |= SIM_SCGC2_DAC0_MASK;
 	DAC0_C0 |= 0xC0;
