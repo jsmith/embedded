@@ -4,7 +4,7 @@
 #define MAX 50
 
 
-int main() {
+int main_adc() {
 	// Setup pins and registers
 	uart_init();
 	adc_init();

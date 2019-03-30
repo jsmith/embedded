@@ -96,7 +96,7 @@ double adc_to_dac() {
 	return DAC_MAX * conversion * DAC_FACTOR;
 }
 
-int main() {
+int main_saved() {
 	// Setup pins and registers
 	uart_init();
 	adc_init();

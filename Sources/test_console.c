@@ -4,7 +4,7 @@
  */
 #include "console.h"
 
-int main() {
+int main_console() {
 	// Setup pins and registers
 	uart_init();
 
