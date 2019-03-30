@@ -22,8 +22,8 @@ int p_hand_open = 0;
 double value = 0.0;
 
 // 0.0025 max rotation (Open), 0.0005 min rotation (Close)
-double duty_min = 0.0005;
-double duty_max = 0.0025;
+double duty_min = 0.0005; // CLOCKWISE
+double duty_max = 0.0015; // COUNTER CLOCKWISE
 
 // Variable duty
 double duty = 0.0005;
@@ -62,7 +62,7 @@ void check_hand_state() {
 	}
 }
 
-int tester() {
+int main() {
 	// Setup pins and registers
 	uart_init();
 	adc_init();

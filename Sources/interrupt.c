@@ -10,8 +10,9 @@
 #define THRESHOLD_2_LOW 2.2
 #define THRESHOLD_2_HIGH 2.2
 
-#define DUTY_MIN 0.0005
-#define DUTY_MAX 0.0025
+#define DUTY_MIN 0.001
+#define PWM_PERIOD 0.02
+#define DUTY_MAX 0.002
 #define DUTY_STEP 0.00001
 
 // ADC max & min
@@ -32,10 +33,18 @@ int HIGH = 0;
 int NOTE = 0;
 int COUNT = 0;
 double PERIOD = 0.0001; // This default value could cause issues
-short DAC_VALUE = 0;
+short DAC_VALUE = 5;
 double TIME_PASSED = 0;
 int CLOCK_FREQUENCY = 20960000;
 double SLOW_DOWN = 1.5;
+
+#define SLOW_DOWN_MAX 3.0
+#define SLOW_DOWN_MIN 1.0
+
+int IN_DUTY = 0;
+
+double DUTY = DUTY_MIN;
+double PWM_DELAY = 0.002; // the default will be overwritten
 
 /*
  * Interrupt callback triggered from TOF flag in FTM2
@@ -136,13 +145,7 @@ void FTM2_init() {
 	FTM2_SC |= (0b1000); // selects the system clock, the counter will now start
 }
 
-int IN_DUTY = 0;
-double PWM_PERIOD = 0.02;
-double DUTY = 0.002;
-double PWM_DELAY = 0.002; // the default will be overwritten
-
-double in_read_adc() {
-	PWM_DELAY = DUTY;
+void in_read_adc() {
 	ADC_VALUE = adc_read();
 
 	if (ADC_VALUE > ADC_MAX) {
@@ -153,8 +156,9 @@ double in_read_adc() {
 	}
 }
 
-double in_adc_to_dac() {
+void in_adc_to_dac() {
 	double conversion = ADC_VALUE / ADC_MAX;
+	// SLOW_DOWN = (SLOW_DOWN_MAX - SLOW_DOWN_MIN) * (1 - conversion) + SLOW_DOWN_MIN;
 	DAC_VALUE = DAC_MAX * conversion * DAC_FACTOR;
 }
 
@@ -173,28 +177,25 @@ void in_check_hand_state() {
 	}
 }
 
+int TESSS = 0;
+
 void FTM1_IRQHandler () {
 	if (IN_DUTY) {
 		pwm_clear_output();
 		PWM_DELAY = PWM_PERIOD - DUTY;
-	} else {
-		in_read_adc();
-		in_adc_to_dac();
-		in_check_hand_state();
+		TESSS++;
+		if (TESSS == 100) {
+			TESSS = 0;
 
-		if (HAND_CLOSE == 1 &&  HAND_OPEN == 0) {
-			DUTY -= DUTY_STEP;
-			if (DUTY < DUTY_MIN) {
+			if (DUTY == DUTY_MIN) {
+				DUTY = DUTY_MAX;
+			} else {
 				DUTY = DUTY_MIN;
 			}
-		} else if (HAND_CLOSE == 0 &&  HAND_OPEN == 1){
-			DUTY += DUTY_STEP;
-			if (DUTY > DUTY_MAX) {
-				DUTY = DUTY_MAX;
-			}
 		}
-
+	} else {
 		pwm_set_output();
+		PWM_DELAY = DUTY;
 	}
 
 	IN_DUTY ^= 1;
@@ -215,12 +216,12 @@ void FTM1_init() {
 	FTM1_SC |= (0b1000);
 }
 
-int main() {
-	dac_init();
-	adc_init();
-	FTM2_init();
-	FTM1_init();
+int mmm() {
+//	dac_init();
+//	adc_init();
+//	FTM2_init();
 	pwm_init();
+	FTM1_init();
 
     // This for loop should be replaced. By default this loop allows a single
 	// stepping.
