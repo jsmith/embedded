@@ -27,13 +27,12 @@
 
 // ADC max & min
 #define ADC_MAX 3.3
-#define ADC_MIN 0.0
 
 #define DAC_MAX 0.05
 #define DAC_MIN 0
 
 // Amount of 1 volt in DAC
-#define DAC_FACTOR (4095.0 / 3.3);
+double DAC_FACTOR = (4095.0 / 3.3);
 
 // Control state of hand open/close.
 int p_hand_close = 0;
@@ -87,13 +86,12 @@ double adc_to_dac() {
 	if (adc_value > ADC_MAX) {
 		adc_value = ADC_MAX;
 	}
-	else if (adc_value < ADC_MIN) {
-		adc_value = ADC_MIN;
+	else if (adc_value < 0) {
+		adc_value = 0;
 	}
 
-	double conversion = adc_value / ADC_MAX;
-
-	return DAC_MAX * conversion * DAC_FACTOR;
+	double normalized = adc_value / ADC_MAX;
+	return DAC_MAX * normalized * DAC_FACTOR;
 }
 
 int main_saved() {
@@ -127,32 +125,32 @@ int main_saved() {
 	double dac_value = 0;
 	while (1) {
 
-//		check_hand_state(dac_value);
-//
-//		if(p_hand_close == 1 &&  p_hand_open == 0) {
-//			duty -= DUTY_STEP;
-//			if (duty < DUTY_MIN) {
-//				duty = DUTY_MIN;
-//			}
-//		} else if(p_hand_close == 0 &&  p_hand_open == 1){
-//			duty += DUTY_STEP;
-//			if (duty > DUTY_MAX) {
-//				duty = DUTY_MAX;
-//			}
-//		}
-//
-//		// Check if time to change PWM high/low
-//		if (time >= duty_time) {
-//			if (duty_set) {
-//				duty_time = time + duty;
-//				pwm_set_output();
-//				duty_set = 0;
-//			} else {
-//				duty_time = time + PWM_PERIOD - duty;
-//				pwm_clear_output();
-//				duty_set = 1;
-//			}
-//		}
+		check_hand_state(dac_value);
+
+		if(p_hand_close == 1 &&  p_hand_open == 0) {
+			duty -= DUTY_STEP;
+			if (duty < DUTY_MIN) {
+				duty = DUTY_MIN;
+			}
+		} else if(p_hand_close == 0 &&  p_hand_open == 1){
+			duty += DUTY_STEP;
+			if (duty > DUTY_MAX) {
+				duty = DUTY_MAX;
+			}
+		}
+
+		// Check if time to change PWM high/low
+		if (time >= duty_time) {
+			if (duty_set) {
+				duty_time = time + duty;
+				pwm_set_output();
+				duty_set = 0;
+			} else {
+				duty_time = time + PWM_PERIOD - duty;
+				pwm_clear_output();
+				duty_set = 1;
+			}
+		}
 
 		// Check if time to change Mario Song Note
 		if (time >= note_change_time) {
