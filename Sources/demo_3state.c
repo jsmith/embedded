@@ -1,3 +1,4 @@
+#include "MK64F12.h"
 #include "console.h"
 #include "adc.h"
 #include "ftm.h"
@@ -28,41 +29,64 @@ double duty_max = 0.0025;
 // Variable duty
 double duty = 0.0005;
 
-// Reading formatted for display.
-char formatted[MAX];
+#define ADC_MAX 3.3
+short DAC_VALUE = 0;
+
+double DAC_FACTOR = (4095.0 / 3.3);
+#define DAC_MAX 0.04
+#define DAC_MIN 0
+
+#define DELAY 0.005
+#define CLOCK_FREQUENCY 20960000
+int HIGH = 0;
+
+void FTM2_IRQHandler( void ) {
+	if (HIGH) {
+		dac_out(0);
+	} else {
+		dac_out(DAC_VALUE);
+	}
+	HIGH ^= 1;
+
+	// set the timer overflow flag to 0 to clear interrupt.
+	FTM2_SC &= ~FTM_SC_TOF_MASK;
+}
+
+void FTM2_init() {
+	NVIC_DisableIRQ( FTM2_IRQn ); // Disable interrupts for FTM2 if they are currently enabled
+	SIM_SCGC6 |= SIM_SCGC6_FTM2_MASK; // Enable the FTM2 Clock
+	FTM2_MODE |= FTM_MODE_WPDIS_MASK; // Turn Write Protection Off
+	FTM2_SC |= (0b000 << 0); // selects pre-scale factor of 1 (default)
+	FTM2_SC |= (0b1 << 6 ); // Enable timer overflow interrupt
+	FTM2_CNTIN = 0x00; // Initial value of counter = 0
+	FTM2_MOD = 0xFFFF & ((int)(DELAY * CLOCK_FREQUENCY));
+	FTM2_C0SC |= 0x28;
+	NVIC_EnableIRQ( FTM2_IRQn );
+	FTM2_SC |= (0b1000); // selects the system clock, the counter will now start
+}
+
+double in_adc_to_dac(double value) {
+	double conversion = value / ADC_MAX;
+	return DAC_MAX * conversion * DAC_FACTOR;
+}
 
 // NOTE:  UART disabled as causes weird jitter glitch with servo.
 void check_hand_state() {
 	if (value <= threshold_1_low && (p_hand_close != 0 || p_hand_open != 1)) {
 		p_hand_close = 0;
 		p_hand_open = 1;
-
-		// Display that hand opening enabled
-//		uart_print("Prosthetic Hand Beginning to Open: ");
-//		uart_print(formatted);
-//		uart_print("\n\r");
 	}
 	else if(value > threshold_1_high && value <= threshold_2_low && (p_hand_close != 0 || p_hand_open != 0)) {
 		p_hand_close = 0;
 		p_hand_open = 0;
-
-		// Display that hand movement suspended
-//		uart_print("Prosthetic Hand Movement Suspended: ");
-//		uart_print(formatted);
-//		uart_print("\n\r");
 	}
 	else if(value > threshold_2_high && (p_hand_close != 1 || p_hand_open != 0)) {
 		p_hand_close = 1;
 		p_hand_open = 0;
-
-		// Display that hand closing enabled
-//		uart_print("Prosthetic Hand Beginning to Close: ");
-//		uart_print(formatted);
-//		uart_print("\n\r");
 	}
 }
 
-int tester() {
+int main() {
 	// Setup pins and registers
 	uart_init();
 	adc_init();
@@ -70,17 +94,14 @@ int tester() {
 	ftm_init();
 	gpio_init();
 	dac_init();
+	FTM2_init();
 
-	// Loop to check and sync all I/O
 	while(1) {
 		value = adc_read();
-		dtoa(value, formatted, 2);
-		dac_out(value * 1241);
+		DAC_VALUE = in_adc_to_dac(value);
 
-		// Will output any user input.
-//		uart_print(formatted);
-//		uart_print("\n\r");
-
+		// dtoa(value, formatted, 2);
+		// dac_out(value * 1241);
 		check_hand_state();
 
 		if(p_hand_close == 1 &&  p_hand_open == 0) {
@@ -102,6 +123,8 @@ int tester() {
 		pwm_set_output();
 		ftm_delay(duty);
 	}
+
+	while (1);
 
 
 	return 0;

@@ -38,10 +38,6 @@ double DAC_FACTOR = (4095.0 / 3.3);
 int p_hand_close = 0;
 int p_hand_open = 0;
 
-
-// Variable duty
-// double duty = 0.0005;
-
 // Reading formatted for display.
 char formatted[MAX];
 
@@ -102,6 +98,7 @@ int main_saved() {
 	ftm_init();
 	gpio_init();
 	dac_init();
+	FTM2_init();
 
 	// PWM
 	int duty_set = 0;

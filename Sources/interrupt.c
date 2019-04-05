@@ -32,7 +32,7 @@ int HIGH = 0;
 int NOTE = 0;
 int COUNT = 0;
 double PERIOD = 0.0001; // This default value could cause issues
-short DAC_VALUE = 0;
+short DAC_VALUE = 50;
 double TIME_PASSED = 0;
 int CLOCK_FREQUENCY = 20960000;
 double SLOW_DOWN = 1.5;
@@ -215,7 +215,7 @@ void FTM1_init() {
 	FTM1_SC |= (0b1000);
 }
 
-int main() {
+int main_interrupt() {
 	dac_init();
 	adc_init();
 	FTM2_init();

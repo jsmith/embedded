@@ -1,3 +1,12 @@
+/**
+ * The ADC Module.
+ *
+ * Inputs: PTE24
+ * Outputs: None
+ *
+ * Authors: Jacob Smith & Mike Walz
+ */
+
 #include "MK64F12.h"
 #include <math.h>
 
