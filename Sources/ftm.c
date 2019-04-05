@@ -35,5 +35,3 @@ void ftm_delay(double t) {
 		}
 	}
 }
-
-// ADD measure() will need for controlling how quickly hand opens/closes

@@ -1,193 +1,164 @@
+#include "MK64F12.h"
 #include "console.h"
 #include "adc.h"
 #include "ftm.h"
 #include "pwm.h"
 #include "gpio.h"
 #include "dac.h"
-#include "mario.h"
 #include "converter.h"
+#include "interrupts.h"
 
 #define MAX 50
-#define PWM_PERIOD 0.02
-
-// 0.0025 max rotation (Open), 0.0005 min rotation (Close)
-#define DUTY_MIN 0.0005
-#define DUTY_MAX 0.0025
-#define DUTY_STEP 0.00001
-
-#define TIME_STEP 0.0002
-
-#define UART_ENABLE 0
+#define AVERAGE_COUNT 10000
 
 // Threshold of open / close action.
-#define THRESHOLD_1_LOW 1.1
-#define THRESHOLD_1_HIGH 1.1
-#define THRESHOLD_2_LOW 2.2
-#define THRESHOLD_2_HIGH 2.2
-
-// ADC max & min
-#define ADC_MAX 3.3
-
-#define DAC_MAX 0.05
-#define DAC_MIN 0
-
-// Amount of 1 volt in DAC
-double DAC_FACTOR = (4095.0 / 3.3);
+double THRESHOLD_1_LOW = 1.1; // 0.7
+double THRESHOLD_1_HIGH = 1.1; // 1.3
+double THRESHOLD_2_LOW = 2.2; // 2.0
+double THRESHOLD_2_HIGH = 2.2; // 2.6
 
 // Control state of hand open/close.
-int p_hand_close = 0;
-int p_hand_open = 0;
+int P_HAND_CLOSE = 0;
+int P_HAND_OPEN = 0;
 
-// Reading formatted for display.
-char formatted[MAX];
+// 0.0025 max rotation (Open), 0.0005 min rotation (Close)
+double DUTY_MIN = 0.00125;
+double DUTY_MAX = 0.0025;
+
+// Variable duty
+double DUTY = 0.0005;
+
+double ADC_MAX = 3.3;
+double ADC_MIN = 0.0;
+short DAC_VALUE = 0;
+
+double DAC_FACTOR = (4095.0 / 3.3);
+#define DAC_MAX 0.04
+#define DAC_MIN 0
+
+#define DELAY 0.005
+int HIGH = 0;
+
+void FTM2_IRQHandler() {
+	if (HIGH) {
+		dac_out(0);
+	} else {
+		dac_out(DAC_VALUE);
+	}
+	HIGH ^= 1;
+
+	// set the timer overflow flag to 0 to clear interrupt.
+	FTM2_SC &= ~FTM_SC_TOF_MASK;
+}
+
+double in_adc_to_dac(double value) {
+	// Clamp input value between max and min.
+	if (value > ADC_MAX) {
+		value = ADC_MAX;
+	}
+	else if (value < ADC_MIN) {
+		value = ADC_MIN;
+	}
+
+	double conversion = (value - ADC_MIN) / (ADC_MAX - ADC_MIN);
+	return DAC_MAX * conversion * DAC_FACTOR;
+}
 
 // NOTE:  UART disabled as causes weird jitter glitch with servo.
 void check_hand_state(double value) {
-	if (value <= THRESHOLD_1_LOW && (p_hand_close != 0 || p_hand_open != 1)) {
-		p_hand_close = 0;
-		p_hand_open = 1;
-
-		// Display that hand opening enabled
-		if (UART_ENABLE) {
-			uart_print("Prosthetic Hand Beginning to Open: ");
-			uart_print(formatted);
-			uart_print("\n\r");
-		}
+	if (value <= THRESHOLD_1_LOW && (P_HAND_CLOSE != 0 || P_HAND_OPEN != 1)) {
+		P_HAND_CLOSE = 0;
+		P_HAND_OPEN = 1;
 	}
-	else if(value > THRESHOLD_1_HIGH && value <= THRESHOLD_2_LOW && (p_hand_close != 0 || p_hand_open != 0)) {
-		p_hand_close = 0;
-		p_hand_open = 0;
-
-		if (UART_ENABLE) {
-			uart_print("Prosthetic Hand Movement Suspended: ");
-			uart_print(formatted);
-			uart_print("\n\r");
-		}
+	else if(value > THRESHOLD_1_HIGH && value <= THRESHOLD_2_LOW && (P_HAND_CLOSE != 0 || P_HAND_OPEN != 0)) {
+		P_HAND_CLOSE = 0;
+		P_HAND_OPEN = 0;
 	}
-	else if(value > THRESHOLD_2_HIGH && (p_hand_close != 1 || p_hand_open != 0)) {
-		p_hand_close = 1;
-		p_hand_open = 0;
-
-		if (UART_ENABLE) {
-			uart_print("Prosthetic Hand Beginning to Close: ");
-			uart_print(formatted);
-			uart_print("\n\r");
-		}
+	else if(value > THRESHOLD_2_HIGH && (P_HAND_CLOSE != 1 || P_HAND_OPEN != 0)) {
+		P_HAND_CLOSE = 1;
+		P_HAND_OPEN = 0;
 	}
 }
 
-double adc_to_dac() {
-	double adc_value = adc_read();
-
-	if (adc_value > ADC_MAX) {
-		adc_value = ADC_MAX;
-	}
-	else if (adc_value < 0) {
-		adc_value = 0;
-	}
-
-	double normalized = adc_value / ADC_MAX;
-	return DAC_MAX * normalized * DAC_FACTOR;
+double convert_range(double value, double in_min, double in_max, double out_min, double out_max) {
+	return ((value - in_min) / (in_max - in_min)) * (out_max - out_min) + out_min;
 }
 
-int main_saved() {
+void calibration_state() {
+	// double values[AVERAGE_COUNT];
+
+	// Test button click
+	blue(1); // REady for open
+	wait_button_click();
+
+	red(1); // REady for close
+	double sum = 0;
+	for (int i = 0; i < AVERAGE_COUNT; i++) {
+		sum += adc_read();
+	}
+	ADC_MIN = sum / AVERAGE_COUNT;
+
+	blue(1);
+	wait_button_click();
+	red(1);
+
+	sum = 0;
+	for (int i = 0; i < AVERAGE_COUNT; i++) {
+		sum += adc_read();
+	}
+	ADC_MAX = sum / AVERAGE_COUNT;
+
+	green(1);
+
+	THRESHOLD_1_LOW = convert_range(THRESHOLD_1_LOW, 0, 3.3, ADC_MIN, ADC_MAX);
+	THRESHOLD_1_HIGH = convert_range(THRESHOLD_1_HIGH, 0, 3.3, ADC_MIN, ADC_MAX);
+	THRESHOLD_2_LOW = convert_range(THRESHOLD_2_LOW, 0, 3.3, ADC_MIN, ADC_MAX);
+	THRESHOLD_2_HIGH = convert_range(THRESHOLD_2_HIGH, 0, 3.3, ADC_MIN, ADC_MAX);
+}
+
+int main() {
 	// Setup pins and registers
-	uart_init();
 	adc_init();
 	pwm_init();
 	ftm_init();
 	gpio_init();
 	dac_init();
-	FTM2_init();
 
-	// PWM
-	int duty_set = 0;
-	double duty_time = 0;
+	calibration_state();
 
-	// DAC Mario Song
-	int note = 0;
-	double note_change_time = 0;
-	double half_period = 0.002; // This is just a default and will change
+	// Start sound after calibration state
+	FTM2_init(DELAY);
 
-	// DAC
-	int dac_set = 0;
-	int set_dac_zero = 0;
-	double dac_change_time = 0.0;
+	while(1) {
+		double value = adc_read();
+		DAC_VALUE = in_adc_to_dac(value);
 
-	// Variable duty
-	double duty = 0.0005;
+		// dtoa(value, formatted, 2);
+		// dac_out(value * 1241);
+		check_hand_state(value);
 
-	// Time since program start (running time).
-	double time = 0;
-	double dac_value = 0;
-	while (1) {
-
-		check_hand_state(dac_value);
-
-		if(p_hand_close == 1 &&  p_hand_open == 0) {
-			duty -= DUTY_STEP;
-			if (duty < DUTY_MIN) {
-				duty = DUTY_MIN;
+		if(P_HAND_CLOSE == 1 &&  P_HAND_OPEN == 0) {
+			DUTY -= 0.00001;
+			if (DUTY < DUTY_MIN) {
+				DUTY = DUTY_MIN;
 			}
-		} else if(p_hand_close == 0 &&  p_hand_open == 1){
-			duty += DUTY_STEP;
-			if (duty > DUTY_MAX) {
-				duty = DUTY_MAX;
+		}
+		else if(P_HAND_CLOSE == 0 &&  P_HAND_OPEN == 1){
+			DUTY += 0.00001;
+			if (DUTY > DUTY_MAX) {
+				DUTY = DUTY_MAX;
 			}
 		}
 
-		// Check if time to change PWM high/low
-		if (time >= duty_time) {
-			if (duty_set) {
-				duty_time = time + duty;
-				pwm_set_output();
-				duty_set = 0;
-			} else {
-				duty_time = time + PWM_PERIOD - duty;
-				pwm_clear_output();
-				duty_set = 1;
-			}
-		}
+		pwm_clear_output();
+		ftm_delay(0.02 - DUTY);
 
-		// Check if time to change Mario Song Note
-		if (time >= note_change_time) {
-			dac_value = adc_to_dac();
-
-			if (MARIO_MELODY[note] != 0) {
-				half_period = 1.0 / MARIO_MELODY[note];
-				set_dac_zero = 0;
-			} else {
-				// If the frequency is zero, we don't want to play anything
-				set_dac_zero = 1;
-			}
-
-			note_change_time += 1.0 / MARIO_BEATS[note];
-			note = (note + 1) % MARIO_SIZE;
-		}
-
-
-		if (time >= dac_change_time) {
-			if (dac_set) {
-				double new_value = 0;
-				if (!set_dac_zero) {
-					new_value = dac_value;
-				}
-
-				dac_out(new_value);
-				dac_set = 0;
-			} else {
-				dac_out(DAC_MIN);
-				dac_set = 1;
-			}
-
-			dac_change_time += half_period;
-		}
-
-
-		// Increase running time.
-		ftm_delay(TIME_STEP);
-		time += TIME_STEP;
+		pwm_set_output();
+		ftm_delay(DUTY);
 	}
+
+	while (1);
+
 
 	return 0;
 }
