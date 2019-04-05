@@ -1,3 +1,11 @@
+/**
+ * The PWM module.
+ *
+ * Modules: FTM
+ * Inputs: None
+ * Outputs: PTA25
+ * Authors: Jacob Smith & Mike Walz
+ */
 #include "MK64F12.h"
 #include "ftm.h"
 #include "gpio.h"
