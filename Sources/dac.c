@@ -3,7 +3,7 @@
  *
  * Modules: DAC
  * Inputs: None
- * Outputs: PTE25
+ * Outputs: DAC0
  *
  * Authors: Mike Walz & Jacob Smith
  */
@@ -26,7 +26,7 @@ void dac_init() {
 }
 
 /**
- * Writes a voltage to DAC0 (PTE25).
+ * Writes a voltage to DAC0.
  * 
  * @param voltage The voltage to write. MUst be < 0 and > 3.3.
  */
