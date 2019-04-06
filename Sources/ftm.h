@@ -2,6 +2,6 @@
 #define SOURCES_FTM_H_
 
 void ftm_init();
-void ftm_delay();
+void ftm_delay(double seconds);
 
 #endif

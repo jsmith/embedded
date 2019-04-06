@@ -1,15 +1,17 @@
 /**
  * The PWM module.
  *
- * Modules: FTM
+ * Modules: GPIO
  * Inputs: None
- * Outputs: PTA25
+ * Outputs: PTE25
  * Authors: Jacob Smith & Mike Walz
  */
 #include "MK64F12.h"
 #include "ftm.h"
-#include "gpio.h"
 
+/**
+ * Initilzes the GPIO modules.
+ */ 
 void pwm_init() {
 	SIM_SCGC5 |= SIM_SCGC5_PORTE_MASK;
 
@@ -19,10 +21,16 @@ void pwm_init() {
 	GPIOE_PDDR |= 1 << 25;
 }
 
+/**
+ * Sets PTE25 port high.
+ */ 
 void pwm_set_output() {
 	GPIOE_PSOR = 1 << 25;
 }
 
+/**
+ * Sets the PTE25 port low.
+ */ 
 void pwm_clear_output() {
 	GPIOE_PCOR = 1 << 25;
 }

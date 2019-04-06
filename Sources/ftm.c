@@ -1,8 +1,20 @@
+/**
+ * The FTM Module. Initializes the FTM and provides a method delay for a certain amount of time.
+ *
+ * Modules: FTM
+ * Inputs: None
+ * Outputs: None
+ *
+ * Authors: Mike Walz & Jacob Smith
+ */
 #include "MK64F12.h"
 
 #define FREQ 20971520
 #define MODO 0xFFFF
 
+/**
+ * Initializes the FTM module.
+ */
 void ftm_init() {
 	// Init the clock
 	SIM_SCGC6 |= SIM_SCGC6_FTM0_MASK;
@@ -16,8 +28,14 @@ void ftm_init() {
 	FTM0_MOD = MODO;
 }
 
-void ftm_delay(double t) {
-	int n = t * FREQ;
+/**
+ * The delay function. Takes in a time in seconds and delays for that amount of time.
+ * 
+ * @param seconds The amount of seconds to delay.
+ */
+void ftm_delay(double seconds) {
+	// The amount of overflows to delay by
+	int n = seconds * FREQ;
 	int count = 0;
 
 	// Reset overflow

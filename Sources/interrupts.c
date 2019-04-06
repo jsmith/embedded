@@ -1,5 +1,5 @@
 /**
- * The interrupt module
+ * The interrupt module. Initialzes the interrupt for FTM2. 
  *
  * Inputs: None
  * Outputs: None
@@ -9,7 +9,13 @@
 
 #define CLOCK_FREQUENCY 20960000
 
-void FTM2_init(double delay) {
+/**
+ * Initializes the interrupt. A function called `FTM2_IRQHandler` must be created in order to take 
+ * advantage of the interrupts.
+ * 
+ * @param The interval for which you want to call the interrupt. Units are in seconds. Must be less than 0.00312071429.
+ */
+void ftm2_init(double delay) {
 	/*
 	 * The two important functions here are:
 	 * NVIC_DisableIRQ( IRQn ) and NVIC_EnableIRQ( IRQn )
