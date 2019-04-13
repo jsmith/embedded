@@ -1,7 +1,7 @@
 /**
- * The GPIO module.
+ * The GPIO module. Uses the onboard LEDs outputs and uses PTC16 as an input. 
  *
- * Inputs: PTC11
+ * Inputs: PTC16
  * Outputs: PTB21, PTB22, PTE26
  * Authors: Jacob Smith & Mike Walz
  */
@@ -16,6 +16,10 @@
 #define GREEN 26
 #define BUTTON 16
 
+/**
+ * Init GPIO. This inializes all of the LEDs and PTC16. PTC16 is pulled down so that it reads 0 
+ * when nothing is connected.
+ */
 void gpio_init(){
 	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTE_MASK;
 
@@ -33,10 +37,19 @@ void gpio_init(){
 	GPIOE_PDDR |= 1 << GREEN;
 }
 
+/**
+ * Reads the current state of PTC16.
+ * 
+ * @return The state of the button.
+ */
 int read_button() {
 	return (GPIOC_PDIR >> BUTTON) & 1;
 }
 
+/**
+ * Waits for the button to first not be clicked and then for it to be clicked. Returns when these 
+ * two items occur.
+ */ 
 void wait_button_click() {
 	// while high
 	while (read_button()) {}
@@ -45,7 +58,11 @@ void wait_button_click() {
 	while (!read_button()) {}
 }
 
-
+/**
+ * Turn the red LED on or off.
+ * 
+ * @param Whether to turn in LED on or off.
+ */ 
 void red(int on) {
 	if (on) {
 		GPIOB_PCOR |= 1 << RED;
@@ -56,6 +73,11 @@ void red(int on) {
 	}
 }
 
+/**
+ * Turn the blue LED on or off.
+ * 
+ * @param Whether to turn in LED on or off.
+ */ 
 void blue(int on) {
 	if (on) {
 		red(0);
@@ -66,6 +88,11 @@ void blue(int on) {
 	}
 }
 
+/**
+ * Turn the green LED on or off.
+ * 
+ * @param Whether to turn in LED on or off.
+ */ 
 void green(int on) {
 	if (on) {
 		GPIOE_PCOR |= 1 << GREEN;
